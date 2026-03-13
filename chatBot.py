@@ -7,6 +7,7 @@ import sys
 import re
 from DB_settings.syncExcilToSQL import start_sync
 import TOTP
+from pathlib import Path
 
 # ==========================================================
 # تسجيل اللوق (Logs)
@@ -368,29 +369,16 @@ def get_sources_text(course_id):
 
 
 def get_slide_file_path(course_id, slide_type, title):
-    """
-    يرجع file_path لملف سلايد محدد.
-    """
-    with db_lock:
-        cur.execute(
-            "SELECT file_path FROM slides WHERE course_id = ? AND slide_type = ? AND title = ?",
-            (course_id, slide_type, title)
-        )
-        row = cur.fetchone()
-    return row[0] if row else None
+    pathExams = Path(f"DataBase/Courses/{course_id}/Slides/{slide_type}")
+    for f in pathExams.rglob(f"*{title}*"):
+        return f  
 
 
 def get_exam_file_path(course_id, exam_type, title):
-    """
-    يرجع file_path لملف اختبار محدد.
-    """
-    with db_lock:
-        cur.execute(
-            "SELECT file_path FROM exams WHERE course_id = ? AND exam_type = ? AND title = ?",
-            (course_id, exam_type, title)
-        )
-        row = cur.fetchone()
-    return row[0] if row else None
+
+    pathExams = Path(f"DataBase/Courses/{course_id}/Exams/{exam_type}")
+    for f in pathExams.rglob(f"*{title}*"):
+        return f   
 
 
 # ==========================================================
