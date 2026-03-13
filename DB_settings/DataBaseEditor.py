@@ -3,8 +3,9 @@ import sqlite3
 conn = sqlite3.connect(r"DataBase/FCIT_bot.db", check_same_thread=False)
 cur = conn.cursor()
 
-cur.execute("DROP TABLE IF EXISTS slides")
-cur.execute("DROP TABLE IF EXISTS exams")
+# cur.execute("DROP TABLE IF EXISTS slides")
+# cur.execute("DROP TABLE IF EXISTS exams")
+cur.execute("DELETE FROM users WHERE email = 'xxxxxxx'")
 
 cur.execute("""CREATE TABLE IF NOT EXISTS major_Terms(
             major_code TEXT,

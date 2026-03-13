@@ -8,6 +8,7 @@ import re
 from DB_settings.syncExcilToSQL import start_sync
 import TOTP
 from pathlib import Path
+from telebot.types import BotCommand
 
 # ==========================================================
 # تسجيل اللوق (Logs)
@@ -78,8 +79,13 @@ def pop_history(user_id):
 # course token = 8554120109:AAHZttTkOfttgX1plyHCasFtno3ZV_geDVw
 # test token = 8578172399:AAFimx2WP-q2xGWM6Ge-mLRcH_9rytapUZw
 
-TOKEN = "8578172399:AAFimx2WP-q2xGWM6Ge-mLRcH_9rytapUZw"
+TOKEN = "8554120109:AAHZttTkOfttgX1plyHCasFtno3ZV_geDVw"
 bot = telebot.TeleBot(TOKEN)
+
+bot.set_my_commands([
+    BotCommand("start", "Start the bot"),
+    BotCommand("help", "Help and guide"),
+])
 
 # ==========================================================
 # ثوابت النصوص/المسميات
@@ -108,18 +114,20 @@ def cb(*parts):
     return "|".join(parts)
 
 
+from telebot.apihelper import ApiTelegramException
+
 def edit_message(call, text, kb=None):
-    """
-    تعديل نفس رسالة البوت (بدل ما يرسل رسائل كثيرة).
-    ملاحظة مهمة:
-    - هذه الدالة تشتغل فقط مع callback_query لأن عندها call.message.
-    """
-    bot.edit_message_text(
-        text,
-        call.message.chat.id,
-        call.message.message_id,
-        reply_markup=kb
-    )
+    try:
+        bot.edit_message_text(
+            text=text,
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=kb
+        )
+    except ApiTelegramException as e:
+        if "message is not modified" in str(e):
+            return
+        raise
 
 
 def build_nav_keyboard():
@@ -500,20 +508,23 @@ def show_about(call, parts):
     bot.send_message(call.message.chat.id, about_text, reply_markup=build_login_keyboard())
 
 def show_back(call, parts):
-    """
-    زر الرجوع:
-    - يشيل الصفحة الحالية من الستاك
-    - يرجع للصفحة السابقة (آخر عنصر في الستاك)
-    """
     user_id = call.from_user.id
-    stack = pop_history(user_id)
+    stack = user_history.get(user_id, [])
 
-    # إذا ما فيه تاريخ => رجع للقائمة الرئيسية
     if not stack:
         edit_message(call, HOME_TEXT, build_main_menu_keyboard())
         return
 
-    prev_data = stack[-1]  # آخر عنصر = الصفحة السابقة
+    current = stack.pop() if stack else None
+
+    while stack and stack[-1] == current:
+        stack.pop()
+
+    if not stack:
+        edit_message(call, HOME_TEXT, build_main_menu_keyboard())
+        return
+
+    prev_data = stack[-1]
     route(call, prev_data)
 
 
@@ -777,6 +788,9 @@ def route(call, callback_data):
 # ==========================================================
 
 def ask_email(message):
+    textmsg = message.text 
+    if textmsg.startswith("/start") or textmsg.startswith("/help"):
+        return
 
     user_id = message.from_user.id
     email = message.text
@@ -797,8 +811,7 @@ def ask_email(message):
     bot.register_next_step_handler(msg, verify)
 
 def verify(message):
-    textmsg = message.text 
-
+    
     user_id = message.from_user.id
     username = message.from_user.username
     try:
@@ -809,11 +822,10 @@ def verify(message):
         return
 
     ok, msg_text = TOTP.verify_otp(user_id, user_input)
-    bot.send_message(message.chat.id, msg_text)
 
     if ok:
         email = TOTP.otp_storage.get(user_id, {}).get("email", None)
-        print(email)
+        logger.info("Verify -> userID= %s || Username= %s || email= %s", message.from_user.id, message.from_user.username, email)
         if email:
             add_or_verify_user(user_id, username , email, verified=True)
             del TOTP.otp_storage[user_id]

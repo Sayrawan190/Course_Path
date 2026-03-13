@@ -60,10 +60,23 @@ def create_otp(user_id , email):
 
 
 def TOTP_Send(ValidEmail , otp):
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px; background-color:#f9f9f9;">
+        <h2 style="color:#333;">👋 مرحباً بك</h2>
+        <p style="color:#555; font-size:16px;">رمز التحقق الخاص بك للوصول إلى حسابك هو:</p>
+
+        <div style="margin:20px 0; padding:20px; text-align:center; background-color:#0078D7; color:white; font-size:28px; font-weight:bold; border-radius:10px; letter-spacing:5px;">
+            {otp}
+        </div>
+
+        <p style="color:#555; font-size:14px;">🔒 لا تشارك هذا الكود مع أي شخص آخر.</p>
+        <p style="color:#999; font-size:12px;">إذا لم تطلب هذا الكود، يمكنك تجاهل هذه الرسالة بأمان.</p>
+    </div>
+    """
     yagBot.send(
-        to= ValidEmail,
-        subject="KAU Verification Code",
-        contents=f"رمز التحقق الخاص بك هو: {otp}"
+        to=ValidEmail,
+        subject="KAU Verification Code🔑",
+        contents=html_content
     )
 
 
