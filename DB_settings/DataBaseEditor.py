@@ -3,7 +3,8 @@ import sqlite3
 conn = sqlite3.connect(r"DataBase/FCIT_bot.db", check_same_thread=False)
 cur = conn.cursor()
 
-# cur.execute("DROP TABLE IF EXISTS courses")
+cur.execute("DROP TABLE IF EXISTS slides")
+cur.execute("DROP TABLE IF EXISTS exams")
 
 cur.execute("""CREATE TABLE IF NOT EXISTS major_Terms(
             major_code TEXT,
@@ -12,7 +13,7 @@ cur.execute("""CREATE TABLE IF NOT EXISTS major_Terms(
             UNIQUE(major_code, term, course_id)
             )""")
 
-cur.execute("""CREATE TABLE IF NOT EXISTS courses(
+cur.execute("""CREATE TABLE IF NOT EXISTS courses(  
             course_name TEXT NOT NULL,
             course_code INTEGER NOT NULL,
             course_title TEXT,
@@ -28,9 +29,8 @@ cur.execute("""CREATE TABLE IF NOT EXISTS slides(
             slide_type TEXT NOT NULL,
             button_title TEXT NOT NULL,
             title TEXT,
-            file_path TEXT NOT NULL,
             ord INTEGER  NOT NULL,
-            UNIQUE(course_id, slide_type, button_title, title, file_path, ord)
+            UNIQUE(course_id, slide_type, button_title, title, ord)
             )""")
 
 cur.execute("""CREATE TABLE IF NOT EXISTS exams(
@@ -38,9 +38,8 @@ cur.execute("""CREATE TABLE IF NOT EXISTS exams(
             exam_type TEXT NOT NULL,
             button_title TEXT NOT NULL,
             title TEXT,
-            file_path TEXT NOT NULL,
             ord INTEGER  NOT NULL,
-            UNIQUE(course_id, exam_type, button_title, title, file_path, ord)
+            UNIQUE(course_id, exam_type, button_title, title, ord)
             )""")
 
 cur.execute("""CREATE TABLE IF NOT EXISTS info_sources(

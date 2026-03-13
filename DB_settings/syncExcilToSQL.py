@@ -74,13 +74,12 @@ def start_sync():
                 slide_type = row["slide_type"].strip()
                 button_title = row["button_title"].strip()
                 title = row["title"].strip()
-                file_path = row["file_path"].strip()
                 ord = int(row["ord"])
         
-                rows_to_insert.append((course_id, slide_type, button_title, title, file_path, ord))
+                rows_to_insert.append((course_id, slide_type, button_title, title, ord))
 
     cur.executemany(
-        "INSERT OR IGNORE INTO slides (course_id, slide_type, button_title, title, file_path, ord) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO slides (course_id, slide_type, button_title, title, ord) VALUES (?, ?, ?, ?, ?)",
         rows_to_insert)
 
     print(f"Inserted {len(rows_to_insert)} rows into slides ✅")
@@ -98,13 +97,12 @@ def start_sync():
             exam_type = row["exam_type"].strip()
             button_title = row["button_title"].strip()
             title = row["title"].strip()
-            file_path = row["file_path"].strip()
             ord = int(row["ord"])
 
-            rows_to_insert.append((course_id, exam_type, button_title, title, file_path, ord))
+            rows_to_insert.append((course_id, exam_type, button_title, title, ord))
 
     cur.executemany(
-        "INSERT OR IGNORE INTO exams (course_id, exam_type, button_title, title, file_path, ord) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO exams (course_id, exam_type, button_title, title, ord) VALUES (?, ?, ?, ?, ?)",
         rows_to_insert
     )
 
