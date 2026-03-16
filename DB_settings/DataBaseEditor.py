@@ -5,6 +5,15 @@ cur = conn.cursor()
 
 # cur.execute("DROP TABLE IF EXISTS slides")
 # cur.execute("DROP TABLE IF EXISTS exams")
+
+# 1042067067 خياط
+
+# 5016425883 مشاري
+
+# 7911073309 عبدالمجيد
+
+# 840957323  ثامر 
+
 cur.execute("DELETE FROM users WHERE email = 'xxxxxxx'")
 
 cur.execute("""CREATE TABLE IF NOT EXISTS major_Terms(
