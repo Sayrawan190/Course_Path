@@ -6,13 +6,14 @@ cur = conn.cursor()
 # cur.execute("DROP TABLE IF EXISTS slides")
 # cur.execute("DROP TABLE IF EXISTS exams")
 
-# 1042067067 خياط
-
-# 5016425883 مشاري
-
-# 7911073309 عبدالمجيد
-
-# 840957323  ثامر 
+# 810634477|x5awc|sbahakim0006@stu.kau.edu.sa|1
+# 840957323|hodorth|talshehri0155@stu.kau.edu.sa|1
+# 978939794|smmb12|sbabgi0008@stu.kau.edu.sa|1
+# 1042067067|KHiA6|malkhayyt@stu.kau.edu.sa|1
+# 1401478668|Sayrawan_190|aalserawan@stu.kau.edu.sa|1
+# 1824597807|onlym_h|malhusaini0003@stu.kau.edu.sa|1
+# 5016425883|Emporer0|malraegi0001@stu.kau.edu.sa|1
+# 7911073309|r2plx|Abazi0007@stu.kau.edu.sa|1
 
 cur.execute("DELETE FROM users WHERE email = 'xxxxxxx'")
 

@@ -60,7 +60,7 @@ def pop_history(user_id):
 # course token = 8554120109:AAHZttTkOfttgX1plyHCasFtno3ZV_geDVw
 # test token = 8578172399:AAFimx2WP-q2xGWM6Ge-mLRcH_9rytapUZw
 
-TOKEN = "8578172399:AAFimx2WP-q2xGWM6Ge-mLRcH_9rytapUZw"
+TOKEN = "8554120109:AAHZttTkOfttgX1plyHCasFtno3ZV_geDVw"
 bot = telebot.TeleBot(TOKEN)
 
 bot.set_my_commands([
@@ -96,6 +96,18 @@ def edit_message(call, text, kb=None):
             text=text,
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
+            reply_markup=kb
+        )
+    except ApiTelegramException as e:
+        if "message is not modified" in str(e):
+            return
+        raise
+
+def send_message(call, text, kb=None):
+    try:
+        bot.send_message(
+            text=text,
+            chat_id=call.message.chat.id,
             reply_markup=kb
         )
     except ApiTelegramException as e:
@@ -359,12 +371,24 @@ def build_exam_types_keyboard(course_id, exam_types):
 
 
 def build_chapters_keyboard(course_id, slide_type, chapters):
+
     buttons = [
         types.InlineKeyboardButton(ch, callback_data=cb("CHAPTER", course_id, slide_type, ch))
         for ch in chapters
     ]
-    return build_keyboard_from_buttons(buttons, row_width=4)
 
+    kb = types.InlineKeyboardMarkup(row_width=4)
+
+    kb.add(*buttons)
+
+    kb.row(
+        types.InlineKeyboardButton("Send all chapters 📂", callback_data=cb("SEND_ALL_CHAPTERS", course_id, slide_type))
+    )
+    kb.row(
+            types.InlineKeyboardButton("رجوع ↩️", callback_data=cb("BACK")),
+            types.InlineKeyboardButton("القائمة الرئيسية 🏠", callback_data=cb("HOME")),
+        )
+    return kb
 
 def build_exams_keyboard(course_id, exam_type, exams_titles):
     buttons = [
@@ -492,10 +516,12 @@ def show_chapters_for_slide(call, parts):
 
     chapters = get_chapters_for_slide(course_id, slide_type)
     kb = build_chapters_keyboard(course_id, slide_type, chapters)
+    
     edit_message(call, f"{slide_type} for {course_id} ({get_course_title(course_id)}):", kb)
 
 
 def show_chapter_file(call, parts):
+
     course_id = parts[1]
     slide_type = parts[2]
     chapter_title = parts[3]
@@ -511,6 +537,21 @@ def show_chapter_file(call, parts):
         return
 
     edit_message(call, f"تم إرسال ملف لـ {course_id} ({chapter_title}) ✅", build_nav_keyboard())
+
+def send_all_chapters(call, parts):
+    course_id = parts[1]
+    slide_type = parts[2]
+
+    pathSlides = Path(f"DataBase/Courses/{course_id}/Slides/{slide_type}")
+
+    for file_path in pathSlides.iterdir():
+        if file_path.is_file():
+            ok = send_document_file(call, file_path)
+            if not ok:
+                return
+    send_message(call, f"تم إرسال جميع الملفات لمادة {course_id} ✅", build_nav_keyboard())
+
+
 
 
 def show_exams_for_course(call, parts):
@@ -597,6 +638,7 @@ ACTIONS = {
     "SECTION": show_section,
     "SLIDES": show_chapters_for_slide,
     "CHAPTER": show_chapter_file,
+    "SEND_ALL_CHAPTERS" : send_all_chapters,
     "EXAM": show_exams_for_course,
     "GETEXAM": show_exam_file,
     "SEARCH": serarch_major,
@@ -770,11 +812,11 @@ def on_callback(call):
 # ==========================================================
 # تشغيل البوت
 # ==========================================================
-# try:
-#     start_sync()
-#     print("Sync is completed... ✅")
-# except:
-#     print("Sync Error... ❌")
+try:
+    start_sync()
+    print("Sync is completed... ✅")
+except:
+    print("Sync Error... ❌")
 
 print("Bot is running... ✅")
 bot.infinity_polling()
