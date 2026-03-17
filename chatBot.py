@@ -820,7 +820,7 @@ def handle_sql_command(message):
 def handle_delete(message):
     user_id = message.from_user.id
 
-    if user_id != 1401478668 and user_id != 810634477:
+    if user_id not in ADMIN_IDS:
         bot.reply_to(message, "ما عندك صلاحية استخدام هذا الأمر")
         return
 
@@ -851,7 +851,7 @@ def handle_delete(message):
 def handle_sql_sync(message):
     user_id = message.from_user.id
 
-    if user_id != 1401478668 and user_id != 810634477:
+    if user_id not in ADMIN_IDS:
         bot.reply_to(message, "ما عندك صلاحية استخدام هذا الأمر")
         return
 
@@ -872,6 +872,32 @@ def handle_sql_sync(message):
             error
         )
         bot.send_message(message.chat.id, f"صار خطأ أثناء المزامنة ❌\n{error}")
+
+@bot.message_handler(func=lambda message: message.text and message.text.startswith("!output"))
+def send_output_file(message):
+    user_id = message.from_user.id
+
+    if user_id not in ADMIN_IDS:
+        bot.reply_to(message, "ما عندك صلاحية استخدام هذا الأمر")
+        return
+
+    logger.info(
+        "Output requested by -> userID=%s || Username=%s",
+        user_id,
+        message.from_user.username
+    )
+
+    try:
+        with open("outputBot.txt", "rb") as file:
+            bot.send_document(message.chat.id, file)
+    except Exception as error:
+        logger.error(
+            "Output send error -> userID=%s || Username=%s || Error=%s",
+            user_id,
+            message.from_user.username,
+            error
+        )
+        bot.send_message(message.chat.id, f"صار خطأ أثناء إرسال الملف ❌\n{error}")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
