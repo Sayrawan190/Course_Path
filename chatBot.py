@@ -5,6 +5,7 @@ import sqlite3
 import threading
 import sys
 import re
+from DB_settings.DataBaseEditor import delete_user
 from DB_settings.syncExcilToSQL import start_sync
 import TOTP
 from pathlib import Path
@@ -687,6 +688,8 @@ def ask_email(message):
 def verify(message):
     user_id = message.from_user.id
     username = message.from_user.username
+    if not username:
+        username = "Mohaan"
     try:
         user_input = int(message.text)
     except ValueError:
@@ -762,7 +765,24 @@ def help_command(message):
 def handle_text(message):
     user_id = message.from_user.id
 
-    
+    if message.text.startswith("!Delete"):
+        text = message.text
+        parts = text.split()
+        delete_user_id = parts[1]
+        logger.info(
+            "Delete by -> userID=%s || Username=%s || UserDeleted=%s",
+            user_id,
+            message.from_user.username,
+            delete_user_id
+        )
+        if user_id == 1401478668 or user_id == 810634477:
+            isDeleted = delete_user(delete_user_id)
+            if isDeleted:
+                bot.reply_to(message, f"تم حذف المستخدم {delete_user_id} ✅")
+            else:
+                bot.reply_to(message, "المستخدم غير موجود")
+
+
     if message.text.startswith("!SQLsync"):
         logger.info("Sync by -> userID= %s || Username= %s", user_id, message.from_user.username)
         if user_id == 1401478668 or user_id == 810634477:
