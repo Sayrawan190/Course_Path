@@ -5,7 +5,7 @@ import sqlite3
 import threading
 import sys
 import re
-from DB_settings.DataBaseEditor import delete_user
+from DB_settings.DataBaseEditor import delete_user, execute_sql_query
 from DB_settings.syncExcilToSQL import start_sync
 import TOTP
 from pathlib import Path
@@ -30,7 +30,7 @@ DB_PATH = r"DataBase/FCIT_bot.db"
 db_lock = threading.Lock()
 
 def get_db_connection():
-    return sqlite3.connect(DB_PATH)
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 
 # ==========================================================
@@ -61,7 +61,7 @@ def pop_history(user_id):
 # course token = 8554120109:AAHZttTkOfttgX1plyHCasFtno3ZV_geDVw
 # test token = 8578172399:AAFimx2WP-q2xGWM6Ge-mLRcH_9rytapUZw
 
-TOKEN = "8554120109:AAHZttTkOfttgX1plyHCasFtno3ZV_geDVw"
+TOKEN = "8578172399:AAFimx2WP-q2xGWM6Ge-mLRcH_9rytapUZw"
 bot = telebot.TeleBot(TOKEN)
 
 bot.set_my_commands([
@@ -761,33 +761,121 @@ def help_command(message):
     bot.send_message(message.chat.id, "للمساعدة، يرجى مراسلة الدعم الفني على @Course_path_support")
 
 
+ADMIN_IDS = {1401478668, 810634477}
+@bot.message_handler(func=lambda message: message.text and message.text.startswith("!SQL"))
+def handle_sql_command(message):
+    user_id = message.from_user.id
+    username = message.from_user.username
+
+    if user_id not in ADMIN_IDS:
+        bot.reply_to(message, "ما عندك صلاحية تستخدم هذا الأمر")
+        return
+
+    sql_text = message.text[len("!SQL"):].strip()
+
+    if not sql_text:
+        bot.reply_to(message, "اكتب استعلام SQL بعد !SQL")
+        return
+
+    success, result = execute_sql_query(sql_text)
+
+    logger.info(
+        "SQL command by -> userID=%s || Username=%s || SQL=%s",
+        user_id,
+        username,
+        sql_text
+    )
+
+    if success:
+        if sql_text.lower().startswith("select"):
+            if not result:
+                bot.reply_to(message, "تم التنفيذ، لكن ما فيه نتائج")
+                return
+
+            output_lines = []
+            for row in result:
+                output_lines.append(str(row))
+
+            output_text = "\n".join(output_lines)
+
+            if len(output_text) > 4000:
+                output_text = output_text[:4000] + "\n...\nالنتيجة طويلة وتم قصها"
+
+            bot.reply_to(message, f"تم تنفيذ الاستعلام ✅\n\n{output_text}")
+
+        else:
+            bot.reply_to(message, f"تم تنفيذ العملية ✅\nعدد الصفوف المتأثرة: {result}")
+
+    else:
+        logger.error(
+            "SQL error by -> userID=%s || Username=%s || Error=%s",
+            user_id,
+            username,
+            result
+        )
+        bot.reply_to(message, f"صار خطأ ❌\n{result}")
+        
+
+@bot.message_handler(func=lambda message: message.text and message.text.startswith("!Delete"))
+def handle_delete(message):
+    user_id = message.from_user.id
+
+    if user_id != 1401478668 and user_id != 810634477:
+        bot.reply_to(message, "ما عندك صلاحية استخدام هذا الأمر")
+        return
+
+    text = message.text
+    parts = text.split()
+
+    if len(parts) < 2:
+        bot.reply_to(message, "اكتب الايدي بعد الأمر\n!Delete user_id")
+        return
+
+    delete_user_id = parts[1]
+
+    logger.info(
+        "Delete by -> userID=%s || Username=%s || UserDeleted=%s",
+        user_id,
+        message.from_user.username,
+        delete_user_id
+    )
+
+    isDeleted = delete_user(delete_user_id)
+
+    if isDeleted:
+        bot.reply_to(message, f"تم حذف المستخدم {delete_user_id} ✅")
+    else:
+        bot.reply_to(message, "المستخدم غير موجود")
+
+@bot.message_handler(func=lambda message: message.text and message.text.startswith("!Sync"))
+def handle_sql_sync(message):
+    user_id = message.from_user.id
+
+    if user_id != 1401478668 and user_id != 810634477:
+        bot.reply_to(message, "ما عندك صلاحية استخدام هذا الأمر")
+        return
+
+    logger.info(
+        "Sync by -> userID=%s || Username=%s",
+        user_id,
+        message.from_user.username
+    )
+
+    try:
+        start_sync()
+        bot.send_message(message.chat.id, "تم مزامنة البيانات ✅")
+    except Exception as error:
+        logger.error(
+            "Sync error -> userID=%s || Username=%s || Error=%s",
+            user_id,
+            message.from_user.username,
+            error
+        )
+        bot.send_message(message.chat.id, f"صار خطأ أثناء المزامنة ❌\n{error}")
+
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
     user_id = message.from_user.id
-
-    if message.text.startswith("!Delete"):
-        text = message.text
-        parts = text.split()
-        delete_user_id = parts[1]
-        logger.info(
-            "Delete by -> userID=%s || Username=%s || UserDeleted=%s",
-            user_id,
-            message.from_user.username,
-            delete_user_id
-        )
-        if user_id == 1401478668 or user_id == 810634477:
-            isDeleted = delete_user(delete_user_id)
-            if isDeleted:
-                bot.reply_to(message, f"تم حذف المستخدم {delete_user_id} ✅")
-            else:
-                bot.reply_to(message, "المستخدم غير موجود")
-
-
-    if message.text.startswith("!SQLsync"):
-        logger.info("Sync by -> userID= %s || Username= %s", user_id, message.from_user.username)
-        if user_id == 1401478668 or user_id == 810634477:
-            start_sync()
-            bot.send_message(message.chat.id, "تم مزامنة البيانات✅")
 
     if not waiting_search.get(user_id, False):
         return

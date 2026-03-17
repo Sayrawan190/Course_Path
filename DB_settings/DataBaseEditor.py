@@ -88,3 +88,25 @@ def delete_user(user_id):
 
     return deleted > 0
 
+ADMIN_IDS = {1401478668, 810634477}
+
+def execute_sql_query(sql_text):
+    conn = sqlite3.connect(r"DataBase/FCIT_bot.db", check_same_thread=False)
+    cur = conn.cursor()
+
+    try:
+        cur.execute(sql_text)
+
+        if sql_text.strip().lower().startswith("select"):
+            rows = cur.fetchall()
+            conn.close()
+            return True, rows
+        else:
+            conn.commit()
+            affected_rows = cur.rowcount
+            conn.close()
+            return True, affected_rows
+
+    except Exception as error:
+        conn.close()
+        return False, str(error)
