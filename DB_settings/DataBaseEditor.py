@@ -6,14 +6,21 @@ cur = conn.cursor()
 # cur.execute("DROP TABLE IF EXISTS slides")
 # cur.execute("DROP TABLE IF EXISTS exams")
 
-# 810634477|x5awc|sbahakim0006@stu.kau.edu.sa|1
+# 810634477|x5awc|sbahakim0006@stu.kau.edu.sa|1  xxxxx
 # 840957323|hodorth|talshehri0155@stu.kau.edu.sa|1
 # 978939794|smmb12|sbabgi0008@stu.kau.edu.sa|1
 # 1042067067|KHiA6|malkhayyt@stu.kau.edu.sa|1
-# 1401478668|Sayrawan_190|aalserawan@stu.kau.edu.sa|1
-# 1824597807|onlym_h|malhusaini0003@stu.kau.edu.sa|1
+# 1401478668|Sayrawan_190|aalserawan@stu.kau.edu.sa|1  xxxxx
+# 1824597807|onlym_h|malhusaini0003@stu.kau.edu.sa|1  xxxxx
 # 5016425883|Emporer0|malraegi0001@stu.kau.edu.sa|1
 # 7911073309|r2plx|Abazi0007@stu.kau.edu.sa|1
+
+# cur.execute("INSERT INTO users VALUES (840957323,'hodorth','talshehri0155@stu.kau.edu.sa',1)")
+# cur.execute("INSERT INTO users VALUES (978939794,'smmb12','sbabgi0008@stu.kau.edu.sa',1)")
+# cur.execute("INSERT INTO users VALUES (1042067067,'KHiA6','malkhayyt@stu.kau.edu.sa',1)")
+# cur.execute("INSERT INTO users VALUES (5016425883,'Emporer0','malraegi0001@stu.kau.edu.sa',1)")
+# cur.execute("INSERT INTO users VALUES (7911073309,'r2plx','Abazi0007@stu.kau.edu.sa',1)")
+
 
 cur.execute("DELETE FROM users WHERE email = 'xxxxxxx'")
 
@@ -66,8 +73,18 @@ cur.execute("""CREATE TABLE IF NOT EXISTS users(
             verified INTEGER DEFAULT 0
             )""")
 
-
-
-
 conn.commit()
 conn.close()
+
+def delete_user(user_id):
+    conn = sqlite3.connect(r"DataBase/FCIT_bot.db", check_same_thread=False)
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+    conn.commit()
+
+    deleted = cur.rowcount
+    conn.close()
+
+    return deleted > 0
+
