@@ -1,54 +1,17 @@
-import csv
 from pathlib import Path
 
 from config import (
     ADMIN_IDS,
     ALLOWED_EXTENSIONS,
     EXAM_TYPE_TITLES,
-    EXAMS_CSV_PATH,
     FILE_TYPE_ALIASES,
     SLIDE_TYPE_TITLES,
-    SLIDES_CSV_PATH,
 )
 from logging_config import logger
 from bot.errors import notify_admins_error
 from bot.instance import bot
 from db.connection import db_lock, get_db_connection
 from db.queries import course_exists, get_next_ord
-
-
-def append_row_to_csv(csv_path, row_data, fieldnames):
-    file_exists = Path(csv_path).exists()
-
-    with open(csv_path, "a", newline="", encoding="utf-8-sig") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(row_data)
-
-
-def remove_row_from_csv(csv_path, match_course_id, match_type, match_title, type_column):
-    if not Path(csv_path).exists():
-        return
-
-    rows = []
-
-    with open(csv_path, "r", newline="", encoding="utf-8-sig") as file:
-        reader = csv.DictReader(file)
-        fieldnames = reader.fieldnames
-
-        for row in reader:
-            if not (
-                row["course_id"] == match_course_id
-                and row[type_column] == match_type
-                and row["title"] == match_title
-            ):
-                rows.append(row)
-
-    with open(csv_path, "w", newline="", encoding="utf-8-sig") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def save_telegram_document(message, target_folder, new_file_name):
@@ -139,12 +102,6 @@ def handle_add_file(message):
                 conn.commit()
                 conn.close()
 
-            append_row_to_csv(
-                SLIDES_CSV_PATH,
-                {"course_id": course_id, "slide_type": file_type, "button_title": button_title, "title": file_title, "ord": next_ord},
-                ["course_id", "slide_type", "button_title", "title", "ord"]
-            )
-
         else:
             target_folder = Path(f"DataBase/Courses/{course_id}/Exams/{file_type}")
             final_file_name = f"{course_id}_{file_title}"
@@ -171,12 +128,6 @@ def handle_add_file(message):
                 )
                 conn.commit()
                 conn.close()
-
-            append_row_to_csv(
-                EXAMS_CSV_PATH,
-                {"course_id": course_id, "exam_type": file_type, "button_title": button_title, "title": file_title, "ord": next_ord},
-                ["course_id", "exam_type", "button_title", "title", "ord"]
-            )
 
         logger.info(
             "Add file by -> userID=%s || Username=%s || Course=%s || Section=%s || Type=%s || Title=%s || Path=%s",
@@ -242,12 +193,10 @@ def handle_delete_file(message):
             target_folder = Path(f"DataBase/Courses/{course_id}/Slides/{file_type}")
             table_name = "slides"
             type_column = "slide_type"
-            csv_path = SLIDES_CSV_PATH
         else:
             target_folder = Path(f"DataBase/Courses/{course_id}/Exams/{file_type}")
             table_name = "exams"
             type_column = "exam_type"
-            csv_path = EXAMS_CSV_PATH
 
         deleted_file = None
 
@@ -279,8 +228,6 @@ def handle_delete_file(message):
             )
             conn.commit()
             conn.close()
-
-        remove_row_from_csv(csv_path, course_id, file_type, file_title, type_column)
 
         logger.info(
             "Delete file by -> userID=%s || Username=%s || Course=%s || Section=%s || Type=%s || Title=%s || Path=%s",

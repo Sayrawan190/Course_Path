@@ -1,45 +1,12 @@
-import csv
 import re
-from pathlib import Path
 
-from config import (
-    ADMIN_IDS,
-    COURSE_SECTIONS,
-    COURSES_CSV_PATH,
-    EXAMS_CSV_PATH,
-    INFO_SOURCES_CSV_PATH,
-    MAJOR_NAME,
-    MAJOR_TERMS_CSV_PATH,
-    SLIDES_CSV_PATH,
-)
+from config import ADMIN_IDS, COURSE_SECTIONS, MAJOR_NAME
 from logging_config import logger
 from bot.errors import notify_admins_error
 from bot.instance import bot
 from db.connection import db_lock, get_db_connection
 
 COURSE_ID_RE = re.compile(r"^[A-Z]+-\d+$")
-
-
-def read_csv_rows(csv_path):
-    with open(csv_path, newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        return list(reader), reader.fieldnames
-
-
-def write_csv_rows(csv_path, rows, fieldnames):
-    with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def append_csv_row(csv_path, row_data, fieldnames):
-    file_exists = Path(csv_path).exists()
-    with open(csv_path, "a", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(row_data)
 
 
 # ==========================================================
@@ -108,18 +75,6 @@ def handle_add_course(message):
             conn.commit()
             conn.close()
 
-        append_csv_row(
-            MAJOR_TERMS_CSV_PATH,
-            {"major_code": major_code, "term": term, "course_id": course_id},
-            ["major_code", "term", "course_id"]
-        )
-        for sec, title, ord_ in COURSE_SECTIONS:
-            append_csv_row(
-                COURSES_CSV_PATH,
-                {"course_name": course_name, "course_code": course_code, "course_title": course_title, "section": sec, "title": title, "ord": ord_},
-                ["course_name", "course_code", "course_title", "section", "title", "ord"]
-            )
-
         logger.info(
             "AddCourse by -> userID=%s || course=%s || major=%s || term=%s || title=%s",
             user_id, course_id, major_code, term, course_title
@@ -176,17 +131,6 @@ def _set_info_sources(message, column, label):
             )
             conn.commit()
             conn.close()
-
-        rows, fieldnames = read_csv_rows(INFO_SOURCES_CSV_PATH)
-        for row in rows:
-            if row["course_id"] == course_id:
-                row[column] = text
-                break
-        else:
-            new_row = {"course_id": course_id, "info": "", "sources": ""}
-            new_row[column] = text
-            rows.append(new_row)
-        write_csv_rows(INFO_SOURCES_CSV_PATH, rows, fieldnames or ["course_id", "info", "sources"])
 
         logger.info("Set%s by -> userID=%s || course=%s", label, user_id, course_id)
         bot.reply_to(message, f"تم تحديث {'المعلومات' if column == 'info' else 'المصادر'} لمادة {course_id} ✅")
@@ -260,21 +204,6 @@ def handle_delete_course(message):
             conn.commit()
             conn.close()
 
-        rows, fn = read_csv_rows(MAJOR_TERMS_CSV_PATH)
-        write_csv_rows(MAJOR_TERMS_CSV_PATH, [r for r in rows if r["course_id"] != course_id], fn)
-
-        rows, fn = read_csv_rows(COURSES_CSV_PATH)
-        write_csv_rows(COURSES_CSV_PATH, [r for r in rows if not (r["course_name"] == course_name and r["course_code"] == course_code)], fn)
-
-        rows, fn = read_csv_rows(SLIDES_CSV_PATH)
-        write_csv_rows(SLIDES_CSV_PATH, [r for r in rows if r["course_id"] != course_id], fn)
-
-        rows, fn = read_csv_rows(EXAMS_CSV_PATH)
-        write_csv_rows(EXAMS_CSV_PATH, [r for r in rows if r["course_id"] != course_id], fn)
-
-        rows, fn = read_csv_rows(INFO_SOURCES_CSV_PATH)
-        write_csv_rows(INFO_SOURCES_CSV_PATH, [r for r in rows if r["course_id"] != course_id], fn)
-
         logger.info("DeleteCourse by -> userID=%s || course=%s", user_id, course_id)
         bot.reply_to(message, f"تم حذف مادة {course_id} من الداتابيس ✅\n(الملفات نفسها على السيرفر ما اتحذفت)")
 
@@ -321,7 +250,6 @@ def handle_reorder(message):
 
     table = "slides" if section == "slides" else "exams"
     type_col = "slide_type" if section == "slides" else "exam_type"
-    csv_path = SLIDES_CSV_PATH if section == "slides" else EXAMS_CSV_PATH
 
     try:
         with db_lock:
@@ -343,15 +271,6 @@ def handle_reorder(message):
                 cur.execute(f"UPDATE {table} SET ord=%s WHERE course_id=%s AND {type_col}=%s AND title=%s", (i, course_id, type_, t))
             conn.commit()
             conn.close()
-
-        rows, fn = read_csv_rows(csv_path)
-        ord_col = "ord"
-        id_col = "slide_type" if section == "slides" else "exam_type"
-        new_ord = {t: i for i, t in enumerate(titles, start=1)}
-        for row in rows:
-            if row["course_id"] == course_id and row[id_col] == type_ and row["title"] in new_ord:
-                row[ord_col] = str(new_ord[row["title"]])
-        write_csv_rows(csv_path, rows, fn)
 
         logger.info("Reorder by -> userID=%s || course=%s || %s/%s/%s -> %s", user_id, course_id, section, type_, title, new_position)
         bot.reply_to(message, f"تم ترتيب {title} بالموضع {new_position} ✅\n\nالترتيب الحالي:\n" + "\n".join(f"{i}. {t}" for i, t in enumerate(titles, start=1)))

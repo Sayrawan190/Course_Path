@@ -22,15 +22,6 @@ DATABASE_URL = os.environ["DATABASE_URL"]
 # ==========================================================
 ADMIN_IDS = {1401478668, 810634477, 8256924843}
 
-# ==========================================================
-# Files
-# ==========================================================
-SLIDES_CSV_PATH = "DataBase/slides.csv"
-EXAMS_CSV_PATH = "DataBase/Exams.csv"
-MAJOR_TERMS_CSV_PATH = "DataBase/major_terms.csv"
-COURSES_CSV_PATH = "DataBase/courses.csv"
-INFO_SOURCES_CSV_PATH = "DataBase/info_sources.csv"
-
 COURSE_SECTIONS = [
     ("info", "نبذة عن المادةℹ️", 1),
     ("sources", "مصادر المادة🔗", 2),

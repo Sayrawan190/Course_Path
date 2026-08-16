@@ -3,7 +3,6 @@ from logging_config import logger
 from bot.errors import notify_admins_error
 from bot.instance import bot
 from DB_settings.DataBaseEditor import execute_sql_query
-from DB_settings.syncExcilToSQL import start_sync
 
 
 @bot.message_handler(commands=['SQL'])
@@ -46,25 +45,6 @@ def handle_sql_command(message):
     else:
         logger.error("SQL error by -> userID=%s || Username=%s || Error=%s", user_id, username, result)
         bot.reply_to(message, f"صار خطأ ❌\n{result}")
-
-
-@bot.message_handler(commands=['Sync'])
-def handle_sql_sync(message):
-    user_id = message.from_user.id
-
-    if user_id not in ADMIN_IDS:
-        bot.reply_to(message, "ما عندك صلاحية استخدام هذا الأمر")
-        return
-
-    logger.info("Sync by -> userID=%s || Username=%s", user_id, message.from_user.username)
-
-    try:
-        start_sync()
-        bot.send_message(message.chat.id, "تم مزامنة البيانات ✅")
-    except Exception as error:
-        logger.error("Sync error -> userID=%s || Username=%s || Error=%s", user_id, message.from_user.username, error)
-        notify_admins_error("handle_sql_sync", error, f"userID={user_id}")
-        bot.send_message(message.chat.id, f"صار خطأ أثناء المزامنة ❌\n{error}")
 
 
 @bot.message_handler(commands=['Output'])
