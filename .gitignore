@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+outputBot.log
+ChatExport_2026-08-16/
+IT.zip

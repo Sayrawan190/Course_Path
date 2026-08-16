@@ -1,0 +1,4 @@
+pyTelegramBotAPI
+yagmail
+python-dotenv
+psycopg2-binary
